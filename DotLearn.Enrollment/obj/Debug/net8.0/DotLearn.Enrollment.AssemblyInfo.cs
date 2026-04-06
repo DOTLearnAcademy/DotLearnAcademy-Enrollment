@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("DotLearn.Enrollment")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8a9077497842623d2e417bfd395e302880a39187")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a24d5421e9059ce76506637553e668d03aab10d6")]
 [assembly: System.Reflection.AssemblyProductAttribute("DotLearn.Enrollment")]
 [assembly: System.Reflection.AssemblyTitleAttribute("DotLearn.Enrollment")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

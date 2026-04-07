@@ -1,5 +1,9 @@
+using Amazon.SQS;
 using DotLearn.Enrollment.Data;
 using DotLearn.Enrollment.Middleware;
+using DotLearn.Enrollment.Repositories;
+using DotLearn.Enrollment.Services;
+using DotLearn.Enrollment.Workers;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Amazon;
@@ -18,8 +22,18 @@ builder.Configuration.AddSecretsManager(region: RegionEndpoint.APSoutheast2);
 
 // Add services to the container.
 var connStr = builder.Configuration.GetConnectionString("DefaultConnection");
-builder.Services.AddDbContext<AppDbContext>(options =>
+builder.Services.AddDbContext<EnrollmentDbContext>(options =>
     options.UseSqlServer(connStr));
+
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<IEnrollmentRepository, EnrollmentRepository>();
+builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
+builder.Services.AddHostedService<PaymentSucceededConsumer>();
+builder.Services.AddDefaultAWSOptions(new Amazon.Extensions.NETCore.Setup.AWSOptions
+{
+    Region = Amazon.RegionEndpoint.APSoutheast2
+});
+builder.Services.AddAWSService<IAmazonSQS>();
 
 builder.Services.AddHealthChecks().AddSqlServer(connStr);
 

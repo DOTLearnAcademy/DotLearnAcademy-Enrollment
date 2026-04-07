@@ -35,3 +35,6 @@ cert/
 *.tmp_proj
 [Ll]og/
 [Ll]ogs/
+
+# Local Dev Factories
+DotLearn.Enrollment/Data/EnrollmentDbContextFactory.cs

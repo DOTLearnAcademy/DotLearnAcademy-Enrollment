@@ -12,20 +12,36 @@ public class EnrollmentService : IEnrollmentService
     private readonly IEnrollmentRepository _repo;
     private readonly IAmazonSQS _sqsClient;
     private readonly IConfiguration _config;
+    private readonly IHttpClientFactory _httpClientFactory;
 
     public EnrollmentService(
         IEnrollmentRepository repo,
         IAmazonSQS sqsClient,
-        IConfiguration config)
+        IConfiguration config,
+        IHttpClientFactory httpClientFactory)
     {
         _repo = repo;
         _sqsClient = sqsClient;
         _config = config;
+        _httpClientFactory = httpClientFactory;
     }
 
     public async Task<EnrollmentResponseDto> EnrollFreeAsync(
         Guid courseId, Guid studentId)
     {
+        // Call Course Service to verify course is actually free
+        using var httpClient = _httpClientFactory.CreateClient();
+        var courseUrl = $"{_config["Services:CourseServiceUrl"]}/internal/courses/{courseId}/price";
+        var response = await httpClient.GetAsync(courseUrl);
+        if (response.IsSuccessStatusCode)
+        {
+            var priceJson = await response.Content.ReadAsStringAsync();
+            var price = JsonSerializer.Deserialize<CoursePriceDto>(priceJson,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            if (price?.Price > 0)
+                throw new InvalidOperationException("This course requires payment.");
+        }
+
         // Check duplicate
         var existing = await _repo.GetByStudentAndCourseAsync(studentId, courseId);
         if (existing != null)

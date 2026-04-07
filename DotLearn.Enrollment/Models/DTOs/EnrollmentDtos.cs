@@ -28,3 +28,5 @@ public record PaymentSucceededEventDto(
     decimal Amount,
     DateTime Timestamp
 );
+
+public record CoursePriceDto(decimal Price);

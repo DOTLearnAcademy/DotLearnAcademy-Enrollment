@@ -25,6 +25,7 @@ var connStr = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<EnrollmentDbContext>(options =>
     options.UseSqlServer(connStr));
 
+builder.Services.AddHttpClient();
 builder.Services.AddScoped<IEnrollmentRepository, EnrollmentRepository>();
 builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
 builder.Services.AddHostedService<PaymentSucceededConsumer>();

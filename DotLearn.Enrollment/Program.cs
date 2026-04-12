@@ -20,7 +20,7 @@ builder.Host.UseSerilog();
 // AWS Secrets Manager (Only in non-Development environments)
 if (!builder.Environment.IsDevelopment())
 {
-    builder.Configuration.AddSecretsManager(region: RegionEndpoint.APSoutheast2);
+    // builder.Configuration.AddSecretsManager(region: RegionEndpoint.APSoutheast2);
 }
 
 // Add services to the container.

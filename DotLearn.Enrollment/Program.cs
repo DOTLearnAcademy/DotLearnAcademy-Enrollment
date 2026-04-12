@@ -48,6 +48,20 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddAuthentication();
 builder.Services.AddAuthorization();
 
+// CORS — DOT-24 Security Lockdown
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("DotLearnPolicy", policy =>
+        policy.WithOrigins(
+                "http://localhost:4200",
+                "https://localhost:4200",
+                builder.Configuration["AllowedOrigins:Ec2"] ?? "",
+                builder.Configuration["AllowedOrigins:CloudFront"] ?? "")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials());
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -63,6 +77,7 @@ app.UseHttpsRedirection();
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<ExceptionHandler>();
 
+app.UseCors("DotLearnPolicy");
 app.UseAuthentication();
 app.UseAuthorization();
 

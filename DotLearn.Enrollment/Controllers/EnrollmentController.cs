@@ -74,6 +74,29 @@ public class EnrollmentController : ControllerBase
         return Ok(new IsEnrolledResponseDto(result));
     }
 
+    // PUT /api/enrollments/{id}/progress -- student endpoint (replaces internal-only route for frontend)
+    [HttpPut("api/enrollments/{id}/progress")]
+    [Authorize]
+    public async Task<IActionResult> UpdateMyProgress(
+        Guid id, [FromBody] UpdateProgressRequestDto request)
+    {
+        // Verify the enrollment belongs to the calling student
+        var enrollment = await _service.GetByIdAsync(id);
+        if (enrollment == null) return NotFound(new { error = "Enrollment not found." });
+        if (enrollment.StudentId != GetUserId())
+            return StatusCode(403, new { error = "Forbidden: enrollment does not belong to you." });
+
+        try
+        {
+            await _service.UpdateProgressAsync(id, request.CompletedLessons, request.TotalLessons);
+            return Ok(new { message = "Progress updated." });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
+    }
+
     // PUT /internal/enrollments/{id}/progress
     [HttpPut("internal/enrollments/{id}/progress")]
     [AllowAnonymous]

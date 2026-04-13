@@ -31,10 +31,17 @@ public class PaymentSucceededConsumer : BackgroundService
         {
             try
             {
+                var queueUrl = _config["SQS:PaymentSucceededQueue"];
+                if (string.IsNullOrEmpty(queueUrl))
+                {
+                    await Task.Delay(30000, ct); // SQS not configured — wait and retry
+                    continue;
+                }
+
                 var response = await _sqsClient.ReceiveMessageAsync(
                     new ReceiveMessageRequest
                     {
-                        QueueUrl = _config["SQS:PaymentSucceededQueue"],
+                        QueueUrl = queueUrl,
                         MaxNumberOfMessages = 10,
                         WaitTimeSeconds = 20
                     }, ct);

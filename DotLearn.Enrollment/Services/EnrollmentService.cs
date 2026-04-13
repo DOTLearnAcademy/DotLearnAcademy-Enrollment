@@ -176,7 +176,7 @@ public class EnrollmentService : IEnrollmentService
         try
         {
             using var httpClient = _httpClientFactory.CreateClient();
-            var courseUrl = $"{_config["Services:CourseServiceUrl"]}/api/courses?instructorId={instructorId}&pageSize=200";
+            var courseUrl = $"{_config["Services:CourseServiceUrl"]}/api/courses?instructorId={instructorId}&instructorOnly=true&pageSize=200";
             var resp = await httpClient.GetAsync(courseUrl);
             if (resp.IsSuccessStatusCode)
             {

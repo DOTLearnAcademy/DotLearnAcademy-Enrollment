@@ -30,3 +30,10 @@ public record PaymentSucceededEventDto(
 );
 
 public record CoursePriceDto(decimal Price);
+
+public record InstructorStatsDto(
+    int TotalStudents,
+    decimal TotalRevenue,
+    int ActiveEnrollments,
+    double AverageRating
+);

@@ -152,4 +152,39 @@ public class EnrollmentService : IEnrollmentService
         e.AmountPaid, e.TransactionId, e.ProgressPercent,
         e.CompletedLessons, e.TotalLessons, e.EnrolledAt, e.CompletedAt
     );
+
+    public async Task<InstructorStatsDto> GetInstructorStatsAsync(Guid instructorId)
+    {
+        // Fetch course IDs owned by this instructor from Course Service
+        var courseIds = new List<Guid>();
+        try
+        {
+            using var httpClient = _httpClientFactory.CreateClient();
+            var courseUrl = $"{_config["Services:CourseServiceUrl"]}/api/courses?instructorId={instructorId}&pageSize=200";
+            var resp = await httpClient.GetAsync(courseUrl);
+            if (resp.IsSuccessStatusCode)
+            {
+                var json = await resp.Content.ReadAsStringAsync();
+                var parsed = JsonSerializer.Deserialize<CourseListDto>(json,
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                courseIds = parsed?.Items?.Select(c => c.Id).ToList() ?? new();
+            }
+        }
+        catch { /* graceful fallback */ }
+
+        if (courseIds.Count == 0)
+            return new InstructorStatsDto(0, 0, 0, 0);
+
+        var enrollments = await _repo.GetByCourseIdsAsync(courseIds);
+
+        var totalStudents = enrollments.Select(e => e.StudentId).Distinct().Count();
+        var totalRevenue = enrollments.Sum(e => e.AmountPaid);
+        var activeEnrollments = enrollments.Count(e => e.Status == DotLearn.Enrollment.Models.Entities.EnrollmentStatus.Active);
+
+        return new InstructorStatsDto(totalStudents, totalRevenue, activeEnrollments, 0);
+    }
 }
+
+// Helper DTOs for Course Service response
+internal record CourseItemDto(Guid Id, string Title);
+internal record CourseListDto(List<CourseItemDto>? Items);

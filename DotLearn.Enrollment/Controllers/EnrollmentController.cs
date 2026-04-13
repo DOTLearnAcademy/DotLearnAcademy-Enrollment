@@ -54,6 +54,16 @@ public class EnrollmentController : ControllerBase
         return Ok(enrollment);
     }
 
+    // GET /api/enrollments/instructor/stats
+    [HttpGet("api/enrollments/instructor/stats")]
+    [Authorize(Roles = "Instructor,Admin")]
+    public async Task<IActionResult> GetInstructorStats()
+    {
+        var instructorId = GetUserId();
+        var stats = await _service.GetInstructorStatsAsync(instructorId);
+        return Ok(stats);
+    }
+
     // GET /internal/enrollments/check?userId=&courseId=
     [HttpGet("internal/enrollments/check")]
     [AllowAnonymous]

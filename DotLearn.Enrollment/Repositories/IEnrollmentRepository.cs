@@ -10,4 +10,5 @@ public interface IEnrollmentRepository
     Task<bool> IsEnrolledAsync(Guid studentId, Guid courseId);
     Task AddAsync(DotLearn.Enrollment.Models.Entities.Enrollment enrollment);
     Task UpdateAsync(DotLearn.Enrollment.Models.Entities.Enrollment enrollment);
+    Task<List<DotLearn.Enrollment.Models.Entities.Enrollment>> GetByCourseIdsAsync(List<Guid> courseIds);
 }

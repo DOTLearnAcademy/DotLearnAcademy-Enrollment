@@ -44,4 +44,9 @@ public class EnrollmentRepository : IEnrollmentRepository
         _context.Enrollments.Update(enrollment);
         await _context.SaveChangesAsync();
     }
+
+    public async Task<List<DotLearn.Enrollment.Models.Entities.Enrollment>> GetByCourseIdsAsync(List<Guid> courseIds) =>
+        await _context.Enrollments
+            .Where(e => courseIds.Contains(e.CourseId))
+            .ToListAsync();
 }

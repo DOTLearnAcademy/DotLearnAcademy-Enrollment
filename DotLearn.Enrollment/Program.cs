@@ -44,8 +44,21 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Authentication & Authorization (Placeholder)
-builder.Services.AddAuthentication();
+// Authentication & Authorization
+builder.Services.AddAuthentication(Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = "dotlearn-auth",
+            ValidateAudience = false, // Not using audience currently
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
+                System.Text.Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Secret"] ?? "placeholder-key-32-chars-minimum!"))
+        };
+    });
 builder.Services.AddAuthorization();
 
 // CORS — DOT-24 Security Lockdown

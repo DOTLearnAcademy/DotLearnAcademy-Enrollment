@@ -11,4 +11,5 @@ public interface IEnrollmentService
     Task<bool> IsEnrolledAsync(Guid studentId, Guid courseId);
     Task UpdateProgressAsync(Guid enrollmentId, int completedLessons, int totalLessons);
     Task RevokeAccessAsync(Guid studentId, Guid courseId);
+    Task<InstructorStatsDto> GetInstructorStatsAsync(Guid instructorId);
 }

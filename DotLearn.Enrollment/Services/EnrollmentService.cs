@@ -30,16 +30,32 @@ public class EnrollmentService : IEnrollmentService
         Guid courseId, Guid studentId)
     {
         // Call Course Service to verify course is actually free
-        using var httpClient = _httpClientFactory.CreateClient();
-        var courseUrl = $"{_config["Services:CourseServiceUrl"]}/internal/courses/{courseId}/price";
-        var response = await httpClient.GetAsync(courseUrl);
-        if (response.IsSuccessStatusCode)
+        // Guard: if CourseServiceUrl is not configured or service is unreachable, skip price check
+        var courseServiceUrl = _config["Services:CourseServiceUrl"];
+        if (!string.IsNullOrWhiteSpace(courseServiceUrl))
         {
-            var priceJson = await response.Content.ReadAsStringAsync();
-            var price = JsonSerializer.Deserialize<CoursePriceDto>(priceJson,
-                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-            if (price?.Price > 0)
-                throw new InvalidOperationException("This course requires payment.");
+            try
+            {
+                using var httpClient = _httpClientFactory.CreateClient();
+                var courseUrl = $"{courseServiceUrl}/internal/courses/{courseId}/price";
+                var response = await httpClient.GetAsync(courseUrl);
+                if (response.IsSuccessStatusCode)
+                {
+                    var priceJson = await response.Content.ReadAsStringAsync();
+                    var price = JsonSerializer.Deserialize<CoursePriceDto>(priceJson,
+                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    if (price?.Price > 0)
+                        throw new InvalidOperationException("This course requires payment.");
+                }
+            }
+            catch (InvalidOperationException)
+            {
+                throw; // re-throw "requires payment" — don't swallow it
+            }
+            catch (Exception)
+            {
+                // Course service unreachable — allow enrollment to proceed
+            }
         }
 
         // Check duplicate

@@ -32,9 +32,11 @@ public class PaymentSucceededConsumer : BackgroundService
             try
             {
                 var queueUrl = _config["SQS:PaymentSucceededQueue"];
-                if (string.IsNullOrEmpty(queueUrl))
+
+                if (string.IsNullOrWhiteSpace(queueUrl))
                 {
-                    await Task.Delay(30000, ct); // SQS not configured — wait and retry
+                    _logger.LogWarning("SQS:PaymentSucceededQueue is not configured.");
+                    await Task.Delay(30000, ct);
                     continue;
                 }
 
@@ -46,10 +48,28 @@ public class PaymentSucceededConsumer : BackgroundService
                         WaitTimeSeconds = 20
                     }, ct);
 
+                if (response?.Messages == null || response.Messages.Count == 0)
+                {
+                    await Task.Delay(2000, ct);
+                    continue;
+                }
+
                 foreach (var message in response.Messages)
                 {
                     try
                     {
+                        if (string.IsNullOrWhiteSpace(message.Body))
+                        {
+                            _logger.LogWarning("Received empty SQS message body. MessageId: {Id}", message.MessageId);
+
+                            await _sqsClient.DeleteMessageAsync(
+                                queueUrl,
+                                message.ReceiptHandle,
+                                ct);
+
+                            continue;
+                        }
+
                         var evt = JsonSerializer.Deserialize<PaymentSucceededEventDto>(
                             message.Body,
                             new JsonSerializerOptions
@@ -57,17 +77,23 @@ public class PaymentSucceededConsumer : BackgroundService
                                 PropertyNameCaseInsensitive = true
                             });
 
-                        if (evt != null)
+                        if (evt == null)
                         {
-                            using var scope = _scopeFactory.CreateScope();
-                            var service = scope.ServiceProvider
-                                .GetRequiredService<IEnrollmentService>();
-                            await service.CreateFromPaymentAsync(evt);
+                            _logger.LogWarning("Failed to deserialize PaymentSucceededEventDto. MessageId: {Id}, Body: {Body}",
+                                message.MessageId, message.Body);
+
+                            continue;
                         }
 
+                        using var scope = _scopeFactory.CreateScope();
+                        var service = scope.ServiceProvider.GetRequiredService<IEnrollmentService>();
+
+                        await service.CreateFromPaymentAsync(evt);
+
                         await _sqsClient.DeleteMessageAsync(
-                            _config["SQS:PaymentSucceededQueue"],
-                            message.ReceiptHandle, ct);
+                            queueUrl,
+                            message.ReceiptHandle,
+                            ct);
 
                         _logger.LogInformation(
                             "Processed PaymentSucceeded for message {Id}",

@@ -38,3 +38,10 @@ cert/
 
 # Local Dev Factories
 DotLearn.Enrollment/Data/EnrollmentDbContextFactory.cs
+
+# Custom Deployment Artifact Ignores
+*.tar.gz
+publish-*/
+publish-v*
+*.sql
+migration_error_capture.txt

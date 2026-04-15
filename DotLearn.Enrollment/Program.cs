@@ -10,6 +10,8 @@ using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using Amazon;
 using System.Security.Claims;
+using System.Net.Http;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -47,15 +49,14 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Authentication & Authorization
-var jwksUri = builder.Configuration["Auth:JwksUri"];
-var authority = jwksUri?.Replace("/.well-known/jwks.json", "");
+// Authentication & Authorization — manual JWKS loading (no OIDC discovery needed)
+var jwksUri = builder.Configuration["Auth:JwksUri"]
+    ?? "http://auth/auth/.well-known/jwks.json";
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        options.Authority = authority;
-        options.RequireHttpsMetadata = false; // keep false for local/dev http
+        options.RequireHttpsMetadata = false;
 
         options.TokenValidationParameters = new TokenValidationParameters
         {
@@ -64,6 +65,13 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = false,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
+            IssuerSigningKeyResolver = (token, securityToken, kid, parameters) =>
+            {
+                using var http = new HttpClient();
+                var json = http.GetStringAsync(jwksUri).GetAwaiter().GetResult();
+                var jwks = new JsonWebKeySet(json);
+                return jwks.GetSigningKeys();
+            },
             NameClaimType = "sub",
             RoleClaimType = ClaimTypes.Role
         };

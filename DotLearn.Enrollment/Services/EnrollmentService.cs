@@ -13,17 +13,20 @@ public class EnrollmentService : IEnrollmentService
     private readonly IAmazonSQS _sqsClient;
     private readonly IConfiguration _config;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly ILogger<EnrollmentService> _logger;
 
     public EnrollmentService(
         IEnrollmentRepository repo,
         IAmazonSQS sqsClient,
         IConfiguration config,
-        IHttpClientFactory httpClientFactory)
+        IHttpClientFactory httpClientFactory,
+        ILogger<EnrollmentService> logger)
     {
         _repo = repo;
         _sqsClient = sqsClient;
         _config = config;
         _httpClientFactory = httpClientFactory;
+        _logger = logger;
     }
 
     public async Task<EnrollmentResponseDto> EnrollFreeAsync(
@@ -74,6 +77,7 @@ public class EnrollmentService : IEnrollmentService
         };
 
         await _repo.AddAsync(enrollment);
+        await TryIncrementCourseEnrollmentCountAsync(courseId);
         return MapToDto(enrollment);
     }
 
@@ -96,6 +100,7 @@ public class EnrollmentService : IEnrollmentService
         };
 
         await _repo.AddAsync(enrollment);
+        await TryIncrementCourseEnrollmentCountAsync(evt.CourseId);
         return MapToDto(enrollment);
     }
 
@@ -163,6 +168,35 @@ public class EnrollmentService : IEnrollmentService
         });
     }
 
+    private async Task TryIncrementCourseEnrollmentCountAsync(Guid courseId)
+    {
+        var courseServiceUrl = _config["Services:CourseServiceUrl"];
+        if (string.IsNullOrWhiteSpace(courseServiceUrl))
+            return;
+
+        try
+        {
+            using var httpClient = _httpClientFactory.CreateClient();
+            var incrementUrl = $"{courseServiceUrl.TrimEnd('/')}/api/internal/courses/{courseId}/increment-enrollment";
+            var response = await httpClient.PostAsync(incrementUrl, null);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning(
+                    "Failed to increment enrollment count for CourseId {CourseId}. Status: {StatusCode}",
+                    courseId,
+                    response.StatusCode);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "Failed to increment enrollment count for CourseId {CourseId}",
+                courseId);
+        }
+    }
+
     private static EnrollmentResponseDto MapToDto(DotLearn.Enrollment.Models.Entities.Enrollment e) => new(
         e.Id, e.StudentId, e.CourseId, e.Status.ToString(),
         e.AmountPaid, e.TransactionId, e.ProgressPercent,
@@ -204,3 +238,4 @@ public class EnrollmentService : IEnrollmentService
 // Helper DTOs for Course Service response
 internal record CourseItemDto(Guid Id, string Title);
 internal record CourseListDto(List<CourseItemDto>? Items);
+

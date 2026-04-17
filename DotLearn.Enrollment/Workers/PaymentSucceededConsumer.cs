@@ -27,15 +27,17 @@ public class PaymentSucceededConsumer : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken ct)
     {
+        var queueConfigKey = "SQS:EnrollmentPaymentSucceededQueue";
+
         while (!ct.IsCancellationRequested)
         {
             try
             {
-                var queueUrl = _config["SQS:PaymentSucceededQueue"];
+                var queueUrl = _config[queueConfigKey];
 
                 if (string.IsNullOrWhiteSpace(queueUrl))
                 {
-                    _logger.LogWarning("SQS:PaymentSucceededQueue is not configured.");
+                    _logger.LogWarning("{QueueConfigKey} is not configured.", queueConfigKey);
                     await Task.Delay(30000, ct);
                     continue;
                 }

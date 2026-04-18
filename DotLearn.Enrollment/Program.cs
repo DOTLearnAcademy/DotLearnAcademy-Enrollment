@@ -33,7 +33,7 @@ var connStr = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<EnrollmentDbContext>(options =>
     options.UseSqlServer(connStr));
 
-builder.Services.AddHttpClient();
+builder.Services.AddHttpClient().AddHttpMessageHandler<DotLearn.Enrollment.Middleware.CorrelationIdDelegatingHandler>();
 builder.Services.AddScoped<IEnrollmentRepository, EnrollmentRepository>();
 builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
 builder.Services.AddHostedService<PaymentSucceededConsumer>();
@@ -45,7 +45,7 @@ builder.Services.AddAWSService<IAmazonSQS>();
 
 builder.Services.AddHealthChecks().AddSqlServer(connStr);
 
-builder.Services.AddControllers().AddHttpMessageHandler<DotLearn.Enrollment.Middleware.CorrelationIdDelegatingHandler>();
+builder.Services.AddControllers();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddTransient<DotLearn.Enrollment.Middleware.CorrelationIdDelegatingHandler>();
 builder.Services.AddEndpointsApiExplorer();

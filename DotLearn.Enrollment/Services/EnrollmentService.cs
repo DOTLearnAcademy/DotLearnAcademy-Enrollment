@@ -210,7 +210,11 @@ public class EnrollmentService : IEnrollmentService
         try
         {
             using var httpClient = _httpClientFactory.CreateClient();
-            var courseUrl = $"{_config["Services:CourseServiceUrl"]}/api/courses?instructorId={instructorId}&instructorOnly=true&pageSize=200";
+            // Internal service-to-service call should not rely on "instructorOnly"
+            // because that mode requires a caller JWT for identity injection.
+            // We filter directly by instructorId; the Course service will still
+            // apply its own visibility rules for non-instructorOnly searches.
+            var courseUrl = $"{_config["Services:CourseServiceUrl"]}/api/courses?instructorId={instructorId}&pageSize=200";
             var resp = await httpClient.GetAsync(courseUrl);
             if (resp.IsSuccessStatusCode)
             {

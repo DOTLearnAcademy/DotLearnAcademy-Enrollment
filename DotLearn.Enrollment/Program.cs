@@ -45,7 +45,9 @@ builder.Services.AddAWSService<IAmazonSQS>();
 
 builder.Services.AddHealthChecks().AddSqlServer(connStr);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddHttpMessageHandler<DotLearn.Enrollment.Middleware.CorrelationIdDelegatingHandler>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddTransient<DotLearn.Enrollment.Middleware.CorrelationIdDelegatingHandler>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
